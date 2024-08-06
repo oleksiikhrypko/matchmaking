@@ -1,0 +1,72 @@
+run:
+  timeout: 5m # manually override linter timeout (default: 1m)
+  tests: false
+  modules-download-mode: readonly
+  allow-parallel-runners: false
+  skip-dirs:
+    - pkg/api
+    - pkg/debug
+linters:
+  enable-all: true
+  disable:
+    - rowserrcheck
+    - sqlclosecheck
+    - structcheck
+    - wastedassign
+    - structcheck
+    - varcheck
+    - golint
+    - nosnakecase
+    - scopelint
+    - exhaustivestruct
+    - ifshort
+    - deadcode
+    - interfacer
+    - maligned
+    - exhaustruct
+    - varnamelen
+    - wrapcheck
+    - tagliatelle
+    - nlreturn
+    - nilnil
+    - exhaustive
+    - goerr113
+    - wsl
+    - lll
+    - gofumpt
+    - gocognit
+    - gci
+    - gomnd # there are a lot of magic numbers in the estimator logic, i.e. it is better to disable this linter.
+    - godot
+    - ireturn
+    - nonamedreturns
+    - ineffassign
+    - forcetypeassert
+    - revive
+    - errcheck
+    - stylecheck
+    - gomoddirectives
+    - interfacebloat
+    - musttag
+    - funlen
+    - dupl
+    - gochecknoglobals
+    - dupword
+    - unused
+    - godox
+    - noctx
+    - cyclop
+    - prealloc
+    - gocyclo
+    - depguard
+    - gocritic
+    - contextcheck
+    - goconst
+linters-settings:
+  cyclop:
+    max-complexity: 15
+    skip-tests: true
+  lll:
+    line-length: 150
+  gofmt:
+    simplify: false
