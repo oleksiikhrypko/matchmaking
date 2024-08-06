@@ -3,6 +3,7 @@ package service
 import (
 	"container/list"
 	"context"
+	"log"
 	"sync"
 	"time"
 )
@@ -123,11 +124,11 @@ func (c *Controller) onCancel() {
 	close(c.chDone)
 
 	// let's see how many rooms we have in the lists
-	// c.lockerB.Lock()
-	// defer c.lockerB.Unlock()
-	// for k, v := range c.lists {
-	// 	log.Printf("room key: %s, rooms: %d\n", k, v.Len())
-	// }
+	c.lockerB.Lock()
+	defer c.lockerB.Unlock()
+	for k, v := range c.lists {
+		log.Printf("room key: %s, rooms: %d\n", k, v.Len())
+	}
 }
 
 // Wait waits until controller is stopped

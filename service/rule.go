@@ -14,34 +14,39 @@ var RuleErr = fmt.Errorf("rule error")
 var RequestErr = fmt.Errorf("request error")
 
 func (r *Rule) BuildRequestRuleKey(req Request) (string, error) {
-	if len(req.Attrs) != len(r.ConditionFns) {
-		return "", RuleErr
-	}
 	keys := make([]string, 0, len(r.ConditionFns))
 	for _, attr := range r.ConditionsOrder {
+		// check if the attribute exists in the request
 		v, ok := req.Attrs[attr]
 		if !ok {
 			return "", RequestErr
 		}
 
+		// check if the attribute has a condition function
 		fn, ok := r.ConditionFns[attr]
 		if !ok {
-			return "", RuleErr
+			// use the default key function
+			keys = append(keys, defaultKeyFn(attr, v))
+			continue
 		}
 
+		// get the key from the condition function && if the condition function returns false, return an error
 		key, ok := fn(v)
 		if !ok {
 			return "", RequestErr
 		}
-
 		keys = append(keys, key)
 	}
 
-	return strings.Join(keys, ":"), nil
+	return strings.Join(keys, "|"), nil
+}
+
+func defaultKeyFn(key Param, input int) string {
+	return fmt.Sprintf("%s:%d", key, input)
 }
 
 var RuleA = Rule{
-	ConditionsOrder: []Param{ParamTable, ParamLeague, ParamLevel},
+	ConditionsOrder: []Param{ParamTable, ParamLeague, ParamLevel, ParamGame},
 	ConditionFns: map[Param]func(int) (string, bool){
 		ParamTable: func(input int) (string, bool) {
 			if input != 7 {
