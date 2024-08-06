@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// Controller is a struct that manages sessions and rooms
 type Controller struct {
 	ctx   context.Context
 	lists map[string]*list.List
@@ -14,6 +15,7 @@ type Controller struct {
 	keyLockers map[string]*sync.Mutex
 
 	chDone        chan *WaitRoom
+	chStopped     chan struct{}
 	onRoomReadyFn OnRoomReadyFn
 
 	shutdownTimeout time.Duration
@@ -21,6 +23,7 @@ type Controller struct {
 	lockerB         sync.Mutex
 }
 
+// OnRoomReadyFn is a function that is called when there is a room that is ready to start the game
 type OnRoomReadyFn func(sessions []Session, room *WaitRoom)
 
 func NewController(ctx context.Context, onRoomReadyFn OnRoomReadyFn) *Controller {
@@ -28,10 +31,11 @@ func NewController(ctx context.Context, onRoomReadyFn OnRoomReadyFn) *Controller
 		ctx:             ctx,
 		lockerA:         sync.Mutex{},
 		lockerB:         sync.Mutex{},
-		keyLockers:      make(map[string]*sync.Mutex),
-		lists:           make(map[string]*list.List),
-		chDone:          make(chan *WaitRoom),
-		onRoomReadyFn:   onRoomReadyFn,
+		keyLockers:      make(map[string]*sync.Mutex), // key -> locker
+		lists:           make(map[string]*list.List),  // key -> list
+		chDone:          make(chan *WaitRoom),         // channel to notify that room is ready
+		chStopped:       make(chan struct{}),          // channel to notify that controller is stopped
+		onRoomReadyFn:   onRoomReadyFn,                // function to call when room is ready
 		shutdownTimeout: 1 * time.Second,
 	}
 	go s.doWaitRoom()
@@ -62,6 +66,7 @@ func (c *Controller) getKeyList(key string) *list.List {
 	return l
 }
 
+// AddSessionToRoom adds session to room with key and equal config
 func (c *Controller) AddSessionToRoom(key string, sess Session, roomCfg WaitRoomConfig) {
 	locker := c.getKeyLocker(key)
 	locker.Lock()
@@ -105,6 +110,10 @@ func (c *Controller) doWaitRoom() {
 	for room := range c.chDone {
 		c.onRoomReadyFn(room.GetSessions(), room)
 	}
+	select {
+	case c.chStopped <- struct{}{}:
+	default:
+	}
 }
 
 func (c *Controller) onCancel() {
@@ -119,4 +128,10 @@ func (c *Controller) onCancel() {
 	// for k, v := range c.lists {
 	// 	log.Printf("room key: %s, rooms: %d\n", k, v.Len())
 	// }
+}
+
+// Wait waits until controller is stopped
+func (c *Controller) Wait() {
+	<-c.chStopped
+	close(c.chStopped)
 }

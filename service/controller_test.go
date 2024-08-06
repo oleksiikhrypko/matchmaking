@@ -39,21 +39,24 @@ func Test_ControllerActions(t *testing.T) {
 	wg := &sync.WaitGroup{}
 
 	wg.Add(9)
-	addSessions(wg, ctx, &RuleA, ctrl, wrCfg4, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 50}, "A", 5000)
-	addSessions(wg, ctx, &RuleA, ctrl, wrCfg8, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 30}, "B", 5000)
-	addSessions(wg, ctx, &RuleA, ctrl, wrCfg12, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 60}, "C", 5000)
-	addSessions(wg, ctx, &RuleA, ctrl, wrCfg4, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 10}, "A2", 5000)
-	addSessions(wg, ctx, &RuleA, ctrl, wrCfg8, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 70}, "B2", 5000)
-	addSessions(wg, ctx, &RuleA, ctrl, wrCfg12, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 15}, "C2", 5000)
-	addSessions(wg, ctx, &RuleA, ctrl, wrCfg4, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 5}, "A3", 5000)
-	addSessions(wg, ctx, &RuleA, ctrl, wrCfg8, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 90}, "B3", 5000)
-	addSessions(wg, ctx, &RuleA, ctrl, wrCfg12, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 20}, "C3", 5000)
+	addSessions(wg, ctx, &RuleA, ctrl, wrCfg4, map[Param]int{ParamTable: 7, ParamLeague: 1, ParamLevel: 50}, "A4", 5000)
+	addSessions(wg, ctx, &RuleA, ctrl, wrCfg8, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 60}, "B8", 5000)
+	addSessions(wg, ctx, &RuleA, ctrl, wrCfg12, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 70}, "C12", 5000)
+	addSessions(wg, ctx, &RuleA, ctrl, wrCfg8, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 10}, "A8", 5000)
+	addSessions(wg, ctx, &RuleA, ctrl, wrCfg12, map[Param]int{ParamTable: 7, ParamLeague: 1, ParamLevel: 20}, "B12", 5000)
+	addSessions(wg, ctx, &RuleA, ctrl, wrCfg4, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 30}, "C4", 5000)
+	addSessions(wg, ctx, &RuleA, ctrl, wrCfg12, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 50}, "A12", 5000)
+	addSessions(wg, ctx, &RuleA, ctrl, wrCfg4, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 50}, "B4", 5000)
+	addSessions(wg, ctx, &RuleA, ctrl, wrCfg8, map[Param]int{ParamTable: 7, ParamLeague: 1, ParamLevel: 50}, "C8", 5000)
 	// wg.Add(1)
 	// addSessions(wg, ctx, &RuleA, ctrl, wrCfg4, map[Param]int{ParamTable: 7, ParamLeague: 2, ParamLevel: 50}, "A", 6)
-
 	wg.Wait()
 	cancel()
-	log.Printf("end, counter: %d, duration_ms: %d\n", counter, time.Since(beginTime).Milliseconds())
+	endTime := time.Now()
+
+	ctrl.Wait()
+
+	log.Printf("end, counter: %d, duration_ms: %d\n", counter, endTime.Sub(beginTime).Milliseconds())
 	time.Sleep(1 * time.Second)
 }
 
