@@ -6,14 +6,24 @@ import (
 	"time"
 )
 
+type WaitRoomRule interface {
+	MatchRequest(req Request) bool
+	BuildBucketKey(req Request) string
+}
+
 type WaitRoomConfig struct {
 	Size    int
 	MinSize int
+	Rule    WaitRoomRule
 	TTL     time.Duration
 }
 
 func (c WaitRoomConfig) IsEqual(other WaitRoomConfig) bool {
 	return c.Size == other.Size && c.MinSize == other.MinSize
+}
+
+func (c WaitRoomConfig) MatchRequest(req Request) bool {
+	return c.IsEqual(req.WaitRoomCfg) && c.Rule.MatchRequest(req)
 }
 
 // WaitRoom represents a room where players wait for the game to start

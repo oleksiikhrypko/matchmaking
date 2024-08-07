@@ -68,7 +68,9 @@ func (c *Controller) getKeyList(key string) *list.List {
 }
 
 // AddSessionToRoom adds session to room with key and equal config
-func (c *Controller) AddSessionToRoom(key string, sess Session, roomCfg WaitRoomConfig) {
+func (c *Controller) AddSessionToRoom(req Request) {
+	key := req.WaitRoomCfg.Rule.BuildBucketKey(req)
+
 	locker := c.getKeyLocker(key)
 	locker.Lock()
 	defer locker.Unlock()
@@ -84,18 +86,20 @@ func (c *Controller) AddSessionToRoom(key string, sess Session, roomCfg WaitRoom
 		if wr, ok = e.Value.(*WaitRoom); !ok {
 			continue
 		}
-		// check if room has required config
-		if !wr.GetConfig().IsEqual(roomCfg) {
+		wrCfg := wr.GetConfig()
+		// check if request matches the wait room
+		if !wrCfg.MatchRequest(req) {
 			continue
 		}
+
 		// try to add session to room
-		if added := wr.Add(sess); added {
+		if added := wr.Add(req.Session); added {
 			return
 		}
 	}
 
 	// no free room with config, create new
-	wr = NewWaitRoom(c.ctx, roomCfg, c.chDone)
+	wr = NewWaitRoom(c.ctx, req.WaitRoomCfg, c.chDone)
 	// add room to the list
 	el := l.PushBack(wr)
 	wr.OnDone(func() {
@@ -105,7 +109,7 @@ func (c *Controller) AddSessionToRoom(key string, sess Session, roomCfg WaitRoom
 	})
 
 	// add session to the room
-	wr.Add(sess)
+	wr.Add(req.Session)
 }
 
 func (c *Controller) doWaitRoom() {

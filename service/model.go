@@ -5,8 +5,9 @@ type Session struct {
 }
 
 type Request struct {
-	Session Session
-	Attrs   map[Param]int
+	Session     Session
+	Attrs       map[Param]int
+	WaitRoomCfg WaitRoomConfig
 }
 
 type Param string
