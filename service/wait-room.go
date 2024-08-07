@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"slices"
 	"sync"
 	"time"
 )
@@ -29,7 +28,7 @@ type WaitRoom struct {
 	locker sync.Mutex
 	chDone chan<- *WaitRoom
 
-	beforeDoneFns []func()
+	onDoneFns []func()
 }
 
 func NewWaitRoom(ctx context.Context, conf WaitRoomConfig, chDone chan<- *WaitRoom) *WaitRoom {
@@ -50,84 +49,81 @@ func NewWaitRoom(ctx context.Context, conf WaitRoomConfig, chDone chan<- *WaitRo
 	return &wr
 }
 
-func (w *WaitRoom) wait() {
-	<-w.wrctx.Done()
-	w.done()
+func (wr *WaitRoom) wait() {
+	<-wr.wrctx.Done()
+	wr.done()
 }
 
-func (w *WaitRoom) done() {
-	w.locker.Lock()
-	defer w.locker.Unlock()
+func (wr *WaitRoom) done() {
+	wr.locker.Lock()
+	defer wr.locker.Unlock()
 
-	for _, fn := range w.beforeDoneFns {
-		fn()
-	}
+	go func() {
+		select {
+		case <-wr.ctx.Done():
+		case wr.chDone <- wr:
+		}
+	}()
 
-	go w.end()
-}
-
-func (w *WaitRoom) end() {
-	select {
-	case <-w.ctx.Done():
-	case w.chDone <- w:
-	}
+	go func() {
+		for _, fn := range wr.onDoneFns {
+			fn()
+		}
+	}()
 }
 
 // Add adds a session to the room
-func (w *WaitRoom) Add(sess Session) bool {
+func (wr *WaitRoom) Add(sess Session) bool {
 	select {
-	case <-w.wrctx.Done():
+	case <-wr.wrctx.Done():
 		return false
 	default:
 	}
-	w.locker.Lock()
-	defer w.locker.Unlock()
+	wr.locker.Lock()
+	defer wr.locker.Unlock()
 
-	if len(w.sessions) >= w.conf.Size {
+	if len(wr.sessions) >= wr.conf.Size {
 		return false
 	}
 
-	w.sessions = append(w.sessions, sess)
-	if len(w.sessions) >= w.conf.Size {
-		w.closeFn()
+	wr.sessions = append(wr.sessions, sess)
+	if len(wr.sessions) >= wr.conf.Size {
+		wr.closeFn()
 	}
 
 	return true
 }
 
-func (w *WaitRoom) Remove(sess Session) {
-	w.locker.Lock()
-	defer w.locker.Unlock()
-	for i, s := range w.sessions {
-		if s.ID == sess.ID {
-			w.sessions = slices.Delete(w.sessions, i, i+1)
-			return
-		}
-	}
-}
-
 // IsReady returns true if the room is ready to start the game
-func (w *WaitRoom) IsReady() bool {
-	w.locker.Lock()
-	defer w.locker.Unlock()
-	return len(w.sessions) >= w.conf.MinSize
+func (wr *WaitRoom) IsReady() bool {
+	wr.locker.Lock()
+	defer wr.locker.Unlock()
+	return len(wr.sessions) >= wr.conf.MinSize
 }
 
 // GetSessions returns the sessions in the room
-func (w *WaitRoom) GetSessions() []Session {
-	w.locker.Lock()
-	defer w.locker.Unlock()
-	return w.sessions
+func (wr *WaitRoom) GetSessions() []Session {
+	wr.locker.Lock()
+	defer wr.locker.Unlock()
+	return wr.sessions
 }
 
 // GetConfig returns the room configuration
-func (w *WaitRoom) GetConfig() WaitRoomConfig {
-	return w.conf
+func (wr *WaitRoom) GetConfig() WaitRoomConfig {
+	return wr.conf
 }
 
-// OnBeforeDone adds a function to be called when room is closed before sending it to the result channel
-func (w *WaitRoom) OnBeforeDone(fns ...func()) {
-	w.locker.Lock()
-	defer w.locker.Unlock()
-	w.beforeDoneFns = append(w.beforeDoneFns, fns...)
+// OnDone adds a function to be called when room is closed
+func (wr *WaitRoom) OnDone(fns ...func()) {
+	select {
+	case <-wr.wrctx.Done():
+		for _, fn := range fns {
+			fn()
+		}
+		return
+	default:
+		wr.locker.Lock()
+		defer wr.locker.Unlock()
+		wr.onDoneFns = append(wr.onDoneFns, fns...)
+	}
 }

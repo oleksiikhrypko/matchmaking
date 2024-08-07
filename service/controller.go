@@ -96,15 +96,16 @@ func (c *Controller) AddSessionToRoom(key string, sess Session, roomCfg WaitRoom
 
 	// no free room with config, create new
 	wr = NewWaitRoom(c.ctx, roomCfg, c.chDone)
-	wr.Add(sess)
-
+	// add room to the list
 	el := l.PushBack(wr)
-
-	wr.OnBeforeDone(func() {
+	wr.OnDone(func() {
 		locker.Lock()
 		defer locker.Unlock()
 		l.Remove(el)
 	})
+
+	// add session to the room
+	wr.Add(sess)
 }
 
 func (c *Controller) doWaitRoom() {
