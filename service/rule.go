@@ -65,10 +65,10 @@ var RuleA = Rule{
 			return "", false
 		},
 		ParamLevel: func(input int) (string, bool) {
-			from := input - input*10/100
-			to := input + input*10/100
+			lvl := input / 10
+			v1, v2 := lvl-1, lvl+1
 
-			return fmt.Sprintf("level:%d..%d", from, to), true
+			return fmt.Sprintf("level:%d-%d", v1, v2), true
 		},
 	},
 }
